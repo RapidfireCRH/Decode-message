@@ -21,12 +21,32 @@ namespace Decode_message
             
             DateTime start = DateTime.Now;
             string line;
-            System.IO.StreamReader file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-25_json");
+            System.IO.StreamReader file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-28_json");
+            int num = 0;
             while ((line = file.ReadLine()) != null)
-                db.addcache(de.decodemsg(line));
+            {
+                num++;
+                decode.message_st temp;
+                temp = de.decodemsg(line);
+                if (!temp.header.Equals(new decode.header_st()))
+                    db.addcache(temp);
+                else
+                    Console.Read();
+            }
+            file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-28_json.1");
+            while ((line = file.ReadLine()) != null)
+            {
+                num++;
+                decode.message_st temp;
+                temp = de.decodemsg(line);
+                if (!temp.header.Equals(new decode.header_st()))
+                    db.addcache(temp);
+                else
+                    Console.Read();
+            }
             file.Close();
             db.loading_complete = true;
-            Console.WriteLine((DateTime.Now - start).TotalMilliseconds);
+            Console.Write("Decoded " + num + " lines in " + (DateTime.Now - start).TotalMilliseconds + " Milliseconds");
             Console.Read();
         }
 

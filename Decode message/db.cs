@@ -32,53 +32,65 @@ namespace Decode_message
             {
                 ret = cache;
                 cache = new List<decode.message_st>();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
             return ret;
         }
         public void writetodb(object dbpath)
         {
-            if (File.Exists((string)dbpath))
-                File.Delete((string)dbpath);
-            //create db file
-            SQLiteConnection m_dbconnection;
-            SQLiteConnection.CreateFile((string)dbpath);
-            m_dbconnection = new SQLiteConnection("Data Source=" + dbpath + "; Version=3;");
-            m_dbconnection.Open();
-            //create tables in db
-            using (SQLiteTransaction tr = m_dbconnection.BeginTransaction())
+            try
             {
-                using (SQLiteCommand cmd = m_dbconnection.CreateCommand())
-                {
-                    cmd.Transaction = tr;
-                    cmd.CommandText = "CREATE TABLE lines (hash CARCHAR(32) PRIMARY KEY, schemanum INTERGER, message TEXT)";
-                    cmd.ExecuteNonQuery();
-                }
-                tr.Commit();
-            }
-            //Write db till cache is cleared
-            List<decode.message_st> localcache = new List<decode.message_st>();
-            while (!(cache.Count == 0 && loading_complete))
-            {
-                localcache = popcache();
+                if (File.Exists((string)dbpath))
+                    File.Delete((string)dbpath);
+                //create db file
+                SQLiteConnection m_dbconnection;
+                SQLiteConnection.CreateFile((string)dbpath);
+                m_dbconnection = new SQLiteConnection("Data Source=" + dbpath + "; Version=3;");
+                m_dbconnection.Open();
+                //create tables in db
                 using (SQLiteTransaction tr = m_dbconnection.BeginTransaction())
                 {
                     using (SQLiteCommand cmd = m_dbconnection.CreateCommand())
                     {
-                        foreach (decode.message_st x in localcache)
-                        {
-                            string sql = "Select hash from lines where hash = " + x.header.hash;
-                            SQLiteCommand reader = new SQLiteCommand(sql, m_dbconnection);
-                            SQLiteDataReader read = reader.ExecuteReader();
-                            if (read.HasRows)
-                                continue;
-                            cmd.CommandText = @"INSERT INTO lines (hash, schemanum, message) VALUES (@hash, @schemanum, @message)";
-                            cmd.Parameters.Add(new SQLiteParameter("@hash", x.header.hash));
-                            cmd.Parameters.Add(new SQLiteParameter("@schemanum", x.schemainfo.schema));
-                            cmd.Parameters.Add(new SQLiteParameter("@message", x.message));
-                        }
+                        cmd.Transaction = tr;
+                        cmd.CommandText = "CREATE TABLE lines (hash CARCHAR(32) PRIMARY KEY, schemanum INTERGER, datestamp INTERGER, message TEXT)";
+                        cmd.ExecuteNonQuery();
                     }
                     tr.Commit();
                 }
+                //Write db till cache is cleared
+                List<decode.message_st> localcache = new List<decode.message_st>();
+                while (!(cache.Count == 0 && loading_complete))
+                {
+                    localcache = popcache();
+                    using (SQLiteTransaction tr = m_dbconnection.BeginTransaction())
+                    {
+                        using (SQLiteCommand cmd = m_dbconnection.CreateCommand())
+                        {
+                            foreach (decode.message_st x in localcache)
+                            {
+                                string sql = "Select * from lines where hash = \"" + x.header.hash + "\"";
+                                SQLiteCommand reader = new SQLiteCommand(sql, m_dbconnection);
+                                SQLiteDataReader read = reader.ExecuteReader();
+                                if (read.HasRows)
+                                    continue;
+                                cmd.CommandText = @"INSERT INTO lines (hash, schemanum, datestamp, message) VALUES (@hash, @schemanum, @datestamp, @message)";
+                                cmd.Parameters.Add(new SQLiteParameter("@hash", x.header.hash));
+                                cmd.Parameters.Add(new SQLiteParameter("@schemanum", x.schemainfo.schema));
+                                cmd.Parameters.Add(new SQLiteParameter("@datestamp", x.header.timestamp.Ticks));
+                                cmd.Parameters.Add(new SQLiteParameter("@message", x.message));
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        tr.Commit();
+                    }
+                }
+                m_dbconnection.Close();
+            }
+            catch (Exception e)
+            {
+                Console.Write("");
             }
         }
 

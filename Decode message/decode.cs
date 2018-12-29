@@ -80,15 +80,17 @@ namespace Decode_message
         {
             try
             {
+                line=line.Replace(" False", " \"False\"").Replace(" True"," \"True\"");
                 header_st ret = new header_st();
                 dynamic message = JObject.Parse(line);
                 ret.timestamp = DateTime.Parse((string)message.header.gatewayTimestamp, new CultureInfo("EN-US", false));
+                ret.timestamp = ret.timestamp.AddTicks(10 * Int32.Parse(line.Substring(line.IndexOf("\'gatewayTimestamp\':") + 41, 6)));
                 ret.softname = message.header.softwareName;
                 ret.softver = message.header.softwareVersion;
                 ret.uploaderid = message.header.uploaderID;
                 return ret;
             }
-            catch { return new header_st(); }
+            catch(Exception e) { return new header_st(); }
         }
 
         //thanks to https://blogs.msdn.microsoft.com/csharpfaq/2006/10/09/how-do-i-calculate-a-md5-hash-from-a-string/
