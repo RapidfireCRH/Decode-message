@@ -11,7 +11,7 @@ namespace Decode_message
     class db
     {
         private static List<decode.message_st> cache = new List<decode.message_st>();
-        private readonly object lck = new object();
+        private readonly static object lck = new object();
         public static bool loading_complete = false;//This will be used to indicate that there will be no more messages loaded into cache
         public bool addcache(decode.message_st message)
         {
@@ -25,7 +25,7 @@ namespace Decode_message
             }
             catch(Exception e) { return false; }
         }
-        private List<decode.message_st> popcache()
+        private static List<decode.message_st> popcache()
         {
             List<decode.message_st> ret;
             lock(lck)
@@ -37,7 +37,7 @@ namespace Decode_message
             }
             return ret;
         }
-        public void writetodb(object dbpath)
+        public static void writetodb(object dbpath)
         {
             try
             {

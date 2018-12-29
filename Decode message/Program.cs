@@ -14,11 +14,10 @@ namespace Decode_message
 
         static void Main(string[] args)
         {
-            decode de = new decode();
             db db = new db();
             Thread dbmgr = new Thread(db.writetodb);
             dbmgr.Start(@"C:\Users\Rapid\Desktop\db.sqlite");
-            
+
             DateTime start = DateTime.Now;
             string line;
             System.IO.StreamReader file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-28_json");
@@ -26,30 +25,47 @@ namespace Decode_message
             while ((line = file.ReadLine()) != null)
             {
                 num++;
-                decode.message_st temp;
-                temp = de.decodemsg(line);
-                if (!temp.header.Equals(new decode.header_st()))
-                    db.addcache(temp);
-                else
-                    Console.Read();
+                ThreadPool.QueueUserWorkItem(runner,line);
             }
             file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-28_json.1");
             while ((line = file.ReadLine()) != null)
             {
                 num++;
-                decode.message_st temp;
-                temp = de.decodemsg(line);
-                if (!temp.header.Equals(new decode.header_st()))
-                    db.addcache(temp);
-                else
-                    Console.Read();
+                ThreadPool.QueueUserWorkItem(runner,line);
             }
             file.Close();
             db.loading_complete = true;
             Console.Write("Decoded " + num + " lines in " + (DateTime.Now - start).TotalMilliseconds + " Milliseconds");
             Console.Read();
         }
+        public static void runner(object line)
+        {
+            decode de = new decode();
+            db db = new db();
+            decode.message_st temp;
+            temp = de.decodemsg((string)line);
+            if (!temp.header.Equals(new decode.header_st()))
+                db.addcache(temp);
+        }
 
+    }
+    class run
+    {
+        static void process(object callback)
+        {
+
+        }
+        public void runner(object line)
+        {
+            decode de = new decode();
+            db db = new db();
+            decode.message_st temp;
+            temp = de.decodemsg((string)line);
+            if (!temp.header.Equals(new decode.header_st()))
+                db.addcache(temp);
+            else
+                Console.Read();
+        }
 
     }
     
