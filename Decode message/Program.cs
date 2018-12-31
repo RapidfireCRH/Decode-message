@@ -20,20 +20,32 @@ namespace Decode_message
 
             DateTime start = DateTime.Now;
             string line;
-            System.IO.StreamReader file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-28_json");
+            System.IO.StreamReader file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-30.jsonl");
             int num = 0;
-            while ((line = file.ReadLine()) != null)
-            {
-                num++;
-                ThreadPool.QueueUserWorkItem(runner,line);
-            }
-            file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-28_json.1");
+            while (!db.queue_empty) Thread.Sleep(1000);
             while ((line = file.ReadLine()) != null)
             {
                 num++;
                 ThreadPool.QueueUserWorkItem(runner,line);
             }
             file.Close();
+            while (!db.queue_empty) Thread.Sleep(1000);
+            file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-30_1.jsonl");
+            while ((line = file.ReadLine()) != null)
+            {
+                num++;
+                ThreadPool.QueueUserWorkItem(runner,line);
+            }
+            file.Close();
+            while (!db.queue_empty) Thread.Sleep(1000);
+            file = new System.IO.StreamReader(@"C:\Users\Rapid\Downloads\2018-12-30_2.jsonl");
+            while ((line = file.ReadLine()) != null)
+            {
+                num++;
+                ThreadPool.QueueUserWorkItem(runner, line);
+            }
+            file.Close();
+            while(!db.queue_empty) Thread.Sleep(1000);
             db.loading_complete = true;
             Console.Write("Decoded " + num + " lines in " + (DateTime.Now - start).TotalMilliseconds + " Milliseconds");
             Console.Read();

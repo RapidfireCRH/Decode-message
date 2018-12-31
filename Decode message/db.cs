@@ -5,14 +5,17 @@ using System.Text;
 using System.IO;
 using System.Threading.Tasks;
 using System.Data.SQLite;
+using System.Threading;
 
 namespace Decode_message
 {
     class db
     {
         private static List<decode.message_st> cache = new List<decode.message_st>();
+        private static List<string> hashlist = new List<string>();
         private readonly static object lck = new object();
         public static bool loading_complete = false;//This will be used to indicate that there will be no more messages loaded into cache
+        public static bool queue_empty = false;
         public bool addcache(decode.message_st message)
         {
             try
@@ -23,7 +26,7 @@ namespace Decode_message
                 }
                 return true;
             }
-            catch(Exception e) { return false; }
+            catch { return false; }
         }
         private static List<decode.message_st> popcache()
         {
@@ -64,6 +67,13 @@ namespace Decode_message
                 while (!(cache.Count == 0 && loading_complete))
                 {
                     localcache = popcache();
+                    queue_empty = false;
+                    if(cache.Count == 0 && localcache.Count == 0)
+                    {
+                        queue_empty = true;
+                        Thread.Sleep(500);
+                        continue;
+                    }
                     using (SQLiteTransaction tr = m_dbconnection.BeginTransaction())
                     {
                         using (SQLiteCommand cmd = m_dbconnection.CreateCommand())

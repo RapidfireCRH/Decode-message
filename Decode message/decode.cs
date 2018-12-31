@@ -32,9 +32,11 @@ namespace Decode_message
         public message_st decodemsg(string message)
         {
             message_st ret = new message_st();
+            ret.header = decodeheader(message);
+            if (ret.header.Equals(new header_st()))
+                return ret;
             ret.message = message;
             ret.schemainfo = getschema(ret.message);
-            ret.header = decodeheader(ret.message);
             ret.header.hash = CalculateMD5Hash(ret.header.timestamp.Ticks + ret.header.uploaderid + ret.schemainfo.schema);
             return ret;
         }
@@ -44,12 +46,16 @@ namespace Decode_message
             try
             {
                 schema_st ret = new schema_st();
-                string schemaline = line.Substring(line.IndexOf("{\'$schemaRef\': \'") + "{\'$schemaRef\': \'".Length, line.IndexOf("\'", line.IndexOf("{\'$schemaRef\': \'") + "{\'$schemaRef\': \'".Length) - (line.IndexOf("{\'$schemaRef\': \'") + "{\'$schemaRef\': \'".Length));
+                string schemaline = line.Substring(line.IndexOf("\"$schemaRef\": \"") + "\"$schemaRef\": \"".Length, line.IndexOf("\"", line.IndexOf("\"$schemaRef\": \"") + "\"$schemaRef\": \"".Length) - (line.IndexOf("\"$schemaRef\": \"") + "\"$schemaRef\": \"".Length));
                 if (schemaline.Contains("beta") || schemaline.Contains("test"))
                     ret.beta = true;
                 else
                     ret.beta = false;
-                ret.schemavernum = Int32.Parse(schemaline.Substring(schemaline.Length - 1 - (ret.beta ? 5 : 0), 1));
+                try
+                {
+                    ret.schemavernum = Int32.Parse(schemaline.Substring(schemaline.Length - 1 - (ret.beta ? 5 : 0), 1));
+                }
+                catch (Exception e2) { }
                 switch (schemaline.Substring("https://eddn.edcd.io/schemas/".Length, (schemaline.Length - 2 - (ret.beta ? 5 : 0)) - "https://eddn.edcd.io/schemas/".Length))
                 {
                     case "journal":
@@ -72,8 +78,8 @@ namespace Decode_message
 
                 }
                 return ret;
-            }
-            catch(Exception e) { throw e; } // for future error catching
+                }
+                catch (Exception e) { throw e; } // for future error catching
 
         }
         private header_st decodeheader(string line)
@@ -84,13 +90,16 @@ namespace Decode_message
                 header_st ret = new header_st();
                 dynamic message = JObject.Parse(line);
                 ret.timestamp = DateTime.Parse((string)message.header.gatewayTimestamp, new CultureInfo("EN-US", false));
-                ret.timestamp = ret.timestamp.AddTicks(10 * Int32.Parse(line.Substring(line.IndexOf("\'gatewayTimestamp\':") + 41, 6)));
+                if (line.Substring(line.IndexOf("\"gatewayTimestamp\":") + 40, 1) == ".")//conatins percision
+                    ret.timestamp = ret.timestamp.AddTicks(10 * Int32.Parse(line.Substring(line.IndexOf("\"gatewayTimestamp\":") + 41, 6)));
                 ret.softname = message.header.softwareName;
                 ret.softver = message.header.softwareVersion;
                 ret.uploaderid = message.header.uploaderID;
                 return ret;
             }
-            catch(Exception e) { return new header_st(); }
+#pragma warning disable CS0168 // Variable is declared but never used
+             catch (Exception e) { return new header_st(); }
+#pragma warning restore CS0168 // Variable is declared but never used
         }
 
         //thanks to https://blogs.msdn.microsoft.com/csharpfaq/2006/10/09/how-do-i-calculate-a-md5-hash-from-a-string/
