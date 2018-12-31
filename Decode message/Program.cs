@@ -59,26 +59,5 @@ namespace Decode_message
             if (!temp.header.Equals(new decode.header_st()))
                 db.addcache(temp);
         }
-
-    }
-    class run
-    {
-        static void process(object callback)
-        {
-
-        }
-        public void runner(object line)
-        {
-            decode de = new decode();
-            db db = new db();
-            decode.message_st temp;
-            temp = de.decodemsg((string)line);
-            if (!temp.header.Equals(new decode.header_st()))
-                db.addcache(temp);
-            else
-                Console.Read();
-        }
-
-    }
-    
+    }   
 }
